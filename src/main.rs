@@ -4,6 +4,9 @@ mod socket;
 use std::fs::File;
 use simplelog::*;
 use log::info;
+use crate::http::start_http;
+
+const HTTP_PORT:u32 = 80;
 
 fn main() {
     CombinedLogger::init(
@@ -13,5 +16,5 @@ fn main() {
         ]
     ).unwrap();
     info!("Hello, world!");
-
+    start_http(HTTP_PORT)
 }
