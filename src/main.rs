@@ -1,3 +1,6 @@
+mod http;
+mod socket;
+
 use std::fs::File;
 use simplelog::*;
 use log::info;
@@ -10,4 +13,5 @@ fn main() {
         ]
     ).unwrap();
     info!("Hello, world!");
+
 }
