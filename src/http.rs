@@ -1,15 +1,17 @@
 use std::ffi::OsStr;
 use std::fmt::format;
 use std::fs::File;
+use std::io::{Read, Write};
 use std::path::{Component, Path, PathBuf};
 use std::str::FromStr;
 use std::sync::Mutex;
 use log::{debug, error, info};
 use rouille::{extension_to_mime, Request, Response, router};
+use rand::{distributions::Alphanumeric, Rng}; // 0.8
 
 const NOT_FOUND_CONTENT:&str = include_str!("../404.html");
 pub fn start_http(port:u32){
-    let queue_mutex = Mutex::new(vec![] as Vec<String>);
+    let queue_mutex:Mutex<Vec<String>> = Mutex::new(vec![]);
     rouille::start_server(format!("0.0.0.0:{port}"), move |request| {
         let log_ok = |req: &Request, resp: &Response, _elap: std::time::Duration| {
             info!("{} {} {} {}", request.remote_addr(), req.method(), req.raw_url(),req.header("Host").unwrap());
@@ -26,14 +28,8 @@ pub fn start_http(port:u32){
 
 
                 (POST) (/api/queue_image) => {
-                    match queue_image(){
-                        Ok(_) => {
-                            Response::empty_204()
-                        },
-                        Err(_) => {
-                            Response::empty_404()
-                        }
-                    }
+                    queue_image(request,queue_mutex)
+                    Response::empty_204()
                 },
 
                 _ => {
@@ -47,7 +43,20 @@ pub fn start_http(port:u32){
     });//,cert,pkey).unwrap().run();
 }
 
-fn queue_image()-> Result<Response,()>{
+fn queue_image(request: &Request, queue_mutex:Mutex<Vec<String>>){
+    let s: String = rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(16)
+        .map(char::from)
+        .collect();
+    let path = format!("./queue/{0}-{1}",request.remote_addr(),s);
+    let bytes = request.data().unwrap().bytes();
+    let mut file:File = File::create(&path).unwrap();
+
+    file.write_all(&[]).expect("could not clear file");
+    for byte in bytes {
+        file.write(&[byte.unwrap()]).expect("failed to write");
+    }
 
 }
 
