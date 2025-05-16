@@ -3,11 +3,13 @@ use std::fmt::format;
 use std::fs::File;
 use std::path::{Component, Path, PathBuf};
 use std::str::FromStr;
+use std::sync::Mutex;
 use log::{debug, error, info};
 use rouille::{extension_to_mime, Request, Response, router};
 
 const NOT_FOUND_CONTENT:&str = include_str!("../404.html");
 pub fn start_http(port:u32){
+    let queue_mutex = Mutex::new(vec![] as Vec<String>);
     rouille::start_server(format!("0.0.0.0:{port}"), move |request| {
         let log_ok = |req: &Request, resp: &Response, _elap: std::time::Duration| {
             info!("{} {} {} {}", request.remote_addr(), req.method(), req.raw_url(),req.header("Host").unwrap());
@@ -22,6 +24,18 @@ pub fn start_http(port:u32){
                     resolve_get(request,"/index.html".to_string())
                 },
 
+
+                (POST) (/api/queue_image) => {
+                    match queue_image(){
+                        Ok(_) => {
+                            Response::empty_204()
+                        },
+                        Err(_) => {
+                            Response::empty_404()
+                        }
+                    }
+                },
+
                 _ => {
                     if request.method() == "GET" {
                         return resolve_get(request,request.url())
@@ -31,6 +45,10 @@ pub fn start_http(port:u32){
             )
         })
     });//,cert,pkey).unwrap().run();
+}
+
+fn queue_image()-> Result<Response,()>{
+
 }
 
 fn resolve_get(request: &Request,req_path:String) ->Response{
