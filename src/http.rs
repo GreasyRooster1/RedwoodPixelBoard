@@ -18,28 +18,31 @@ pub fn start_http(port:u32){
             router!(request,
                 (GET) (/) => {
                     debug!("{} {} {} {} redirecting to index.html ",request.remote_addr(), request.method(), request.raw_url(),request.header("Host").unwrap());
-                    Response::
+                    resolve_get(request,"/index.html".to_string())
                 },
 
                 _ => {
-                    let req_path = request.url()
                     if request.method() == "GET" {
-                        debug!("{} {} {} {} requested file read",request.remote_addr(), request.method(), request.raw_url(),request.header("Host").unwrap());
-                        let path = match get_path(req_path){
-                            Ok(p) => p
-                            Err(_) => {
-                                return Response::empty_404();
-                            }
-                        }
-                        let extension = Path::new(&path).extension().and_then(OsStr::to_str).unwrap();
-                        let file = File::open(path).unwrap();
-                        return Response::from_file(extension_to_mime(extension),file)
+                        return resolve_get(request,request.url())
                     }
                     Response::empty_404()
                 }
             )
         })
     });//,cert,pkey).unwrap().run();
+}
+
+fn resolve_get(request: &Request,req_path:String) ->Response{
+    debug!("{} {} {} {} requested file read",request.remote_addr(), request.method(), request.raw_url(),request.header("Host").unwrap());
+    let path = match get_path(req_path){
+        Ok(p) => p,
+        Err(_) => {
+            return Response::empty_404();
+        }
+    }
+    let extension = Path::new(&path).extension().and_then(OsStr::to_str).unwrap();
+    let file = File::open(path).unwrap();
+    Response::from_file(extension_to_mime(extension),file)
 }
 
 fn get_path(uri:String)->Result<String,String>{
