@@ -6,7 +6,7 @@ use simplelog::*;
 use log::info;
 use crate::http::start_http;
 
-const HTTP_PORT:u32 = 80;
+const HTTP_PORT:u32 = 8081;
 
 fn main() {
     CombinedLogger::init(

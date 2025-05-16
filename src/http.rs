@@ -6,6 +6,9 @@ use std::str::FromStr;
 use log::{debug, error, info};
 use rouille::{extension_to_mime, Request, Response, router};
 
+const NOT_FOUND_CONTENT:&str = include_str!("404.html");
+const NOT_FOUND_RESPONSE:Response = Response::from_data("text/html",NOT_FOUND_CONTENT);
+
 pub fn start_http(port:u32){
     rouille::start_server(format!("0.0.0.0:{port}"), move |request| {
         let log_ok = |req: &Request, resp: &Response, _elap: std::time::Duration| {
@@ -25,7 +28,7 @@ pub fn start_http(port:u32){
                     if request.method() == "GET" {
                         return resolve_get(request,request.url())
                     }
-                    Response::empty_404()
+                    NOT_FOUND_RESPONSE
                 }
             )
         })
@@ -37,11 +40,17 @@ fn resolve_get(request: &Request,req_path:String) ->Response{
     let path = match get_path(req_path){
         Ok(p) => p,
         Err(_) => {
-            return Response::empty_404();
+            return NOT_FOUND_RESPONSE;
         }
-    }
-    let extension = Path::new(&path).extension().and_then(OsStr::to_str).unwrap();
-    let file = File::open(path).unwrap();
+    };
+    let binding = path.clone();
+    let extension = Path::new(&binding).extension().and_then(OsStr::to_str).unwrap();
+    let file = match File::open(path) {
+        Ok(f)=>f,
+        Err(_) =>{
+            return NOT_FOUND_RESPONSE;
+        }
+    };
     Response::from_file(extension_to_mime(extension),file)
 }
 
